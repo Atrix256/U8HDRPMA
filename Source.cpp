@@ -43,6 +43,10 @@ void ShaderLerp(const unsigned char* data, int width, int height, int numChannel
     imageCopy.resize(width*height*numChannels);
     memcpy(&imageCopy[0], data, imageCopy.size());
 
+    std::vector<unsigned char> imageCopy2;
+    imageCopy2.resize(width*height*numChannels);
+    memcpy(&imageCopy2[0], data, imageCopy.size());
+
     float HDRColorR = 1.6f;
     float HDRColorG = 1.4f;
     float HDRColorB = 0.8f;
@@ -51,6 +55,7 @@ void ShaderLerp(const unsigned char* data, int width, int height, int numChannel
     {
         const unsigned char* srcRow = &data[width*y * 4];
         unsigned char* dstRow = &imageCopy[width*y * 4];
+        unsigned char* dstRow2 = &imageCopy2[width*y * 4];
         for (int x = 0; x < width; ++x)
         {
             float r = sRGBU8_to_Linear(srcRow[0]);
@@ -68,12 +73,29 @@ void ShaderLerp(const unsigned char* data, int width, int height, int numChannel
             dstRow[2] = Linear_to_sRGBU8(b);
             dstRow[3] = srcRow[3];
 
+            if (r > 1.0f || g > 1.0f || b > 1.0f)
+            {
+                dstRow2[0] = 255;
+                dstRow2[1] = 0;
+                dstRow2[2] = 0;
+                dstRow2[3] = dstRow[3];
+            }
+            else
+            {
+                dstRow2[0] = dstRow[0];
+                dstRow2[1] = dstRow[1];
+                dstRow2[2] = dstRow[2];
+                dstRow2[3] = dstRow[3];
+            }
+
             srcRow += 4;
             dstRow += 4;
+            dstRow2 += 4;
         }
     }
 
     stbi_write_png("out/1_shader.png", width, height, 4, &imageCopy[0], width * 4);
+    stbi_write_png("out/1_shaderclip.png", width, height, 4, &imageCopy2[0], width * 4);
 }
 
 // Do the lerp via alpha blending
